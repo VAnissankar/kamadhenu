@@ -5,10 +5,168 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Indian Cow Breeds Map</title>
     <link rel="stylesheet" href="styles1.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .search-container {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background-color: #fff;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        #search-input {
+            font-size: 16px;
+            padding: 8px 12px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        #search-button {
+            padding: 8px 16px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 5px;
+        }
+        #loading-indicator {
+            display: none;
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div id="map"></div>
+    
+    <div class="search-container">
+        <input id="search-input" type="text" placeholder="Search for a location...">
+        <button id="search-button">Search</button>
+    </div>
+    
+    <div id="loading-indicator">Searching...</div>
+    
+    <!-- Load Leaflet and Geocoder first -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    
+    <!-- Load cow breeds data and functions -->
     <script src="script1.js"></script>
+    
+    <script>
+        let map;
+        let searchMarker;
+        
+        // Initialize the map when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+        });
+        
+        function initMap() {
+            // Create map centered on India
+            const india = [20.5937, 78.9629];
+            map = L.map('map').setView(india, 5);
+            
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Add event listener for the search button
+            document.getElementById("search-button").addEventListener("click", searchLocation);
+            
+            // Allow enter key to trigger search
+            document.getElementById("search-input").addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    searchLocation();
+                }
+            });
+            
+            // Add cow breed markers after the map is initialized
+            if (typeof addCowBreedMarkers === 'function') {
+                addCowBreedMarkers(map);
+            } else {
+                console.error("addCowBreedMarkers function not found. Check script1.js");
+            }
+        }
+        
+        function searchLocation() {
+            const searchInput = document.getElementById("search-input").value;
+            
+            if (searchInput === "") {
+                alert("Please enter a location to search");
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById("loading-indicator").style.display = "block";
+            
+            // Use Leaflet Control Geocoder to find the location
+            const geocoder = L.Control.Geocoder.nominatim();
+            
+            geocoder.geocode(searchInput, function(results) {
+                // Hide loading indicator
+                document.getElementById("loading-indicator").style.display = "none";
+                
+                if (results && results.length > 0) {
+                    const result = results[0];
+                    console.log("Location found:", result);
+                    
+                    // Center map on the searched location
+                    map.setView(result.center, 10);
+                    
+                    // Remove previous search marker if exists
+                    if (searchMarker) {
+                        map.removeLayer(searchMarker);
+                    }
+                    
+                    // Add marker at the searched location
+                    searchMarker = L.marker(result.center, {
+                        icon: L.icon({
+                            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [0, -41]
+                        })
+                    }).addTo(map);
+                    
+                    // Add popup with location name
+                    searchMarker.bindPopup(result.name).openPopup();
+                    
+                } else {
+                    alert("Location not found. Please try another search term.");
+                    console.error("Geocoding failed");
+                }
+            });
+        }
+    </script>
 </body>
 </html>
 
