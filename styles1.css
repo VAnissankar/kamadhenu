@@ -2,7 +2,7 @@
     width: 800px;
     height: 600px;
     border: 1px solid black;
-    background-image: url('map.jpg'); /* replace with your own map image */
+    background-color: white; /* replace with your own map image */
     background-size: cover;
 
     body {
